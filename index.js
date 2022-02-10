@@ -90,44 +90,44 @@ app.delete("/envelopes/:id", async (req, res) => {
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// transcation api part
+// transaction api part
 ///////////////////////////////////////////////////////////////////////////////
 
-// read all transcation
-app.get("/transcations", async (req, res) => {
+// read all transaction
+app.get("/transactions", async (req, res) => {
     try {
-        const allTranscations = await pool.query("SELECT * FROM transcation");
-        res.json(allTranscations.rows);
+        const allTransactions = await pool.query("SELECT * FROM transaction");
+        res.json(allTransactions.rows);
     } catch (error) {
         console.error(error.message);
     }
 })
 
-// read a transcation
-app.get("/transcations/:id", async (req, res) => {  
+// read a transaction
+app.get("/transactions/:id", async (req, res) => {  
     try {
         const {id} = req.params;
-        const transcation = await pool.query(
-            "SELECT * FROM transcation WHERE transcation_id = $1", 
+        const transaction = await pool.query(
+            "SELECT * FROM transaction WHERE transaction_id = $1", 
             [id]
         );
 
-        res.json(transcation.rows[0]);
+        res.json(transaction.rows[0]);
     } catch (error) {
         console.error(error.message);
     }
 })
 
-// create a transcation
-app.post("/transcations", async (req, res) => {
+// create a transaction
+app.post("/transactions", async (req, res) => {
     try {
         const date = req.body.date;
         const amount = req.body.amount;
         const recipient = req.body.recipient;
         const envelope_id = req.body.envelope_id;
 
-        const newTranscation = await pool.query(
-            "INSERT INTO transcation (date, amount, recipient, envelope_id) VALUES ($1, $2, $3, $4) RETURNING *",
+        const newTransaction = await pool.query(
+            "INSERT INTO transaction (date, amount, recipient, envelope_id) VALUES ($1, $2, $3, $4) RETURNING *",
             [date, amount, recipient, envelope_id]
         );
 
@@ -136,45 +136,80 @@ app.post("/transcations", async (req, res) => {
             [amount, envelope_id]
         );
 
-        res.json(newTranscation.rows[0]);
+        res.json(newTransaction.rows[0]);
         
     } catch(error) {
         console.error(error.message);
     }
 })
 
-// update a transcation
-app.put("/transcations/:id", async (req, res) => {
+// update a transaction
+app.put("/transactions/:id", async (req, res) => {
     try {
         const {id} = req.params;
 
+        // get old transaction
+        const oldTransaction = await pool.query(
+            "SELECT * FROM transaction WHERE transaction_id = $1", 
+            [id]
+        );
+        const oldAmount = oldTransaction.rows[0].amount;
+        const oldEnvelope = oldTransaction.rows[0].envelope_id;
+
+        // new transaction
         const date = req.body.date;
         const amount = req.body.amount;
         const recipient = req.body.recipient;
         const envelope_id = req.body.envelope_id;
 
-        // can only update date, recipient
-        const updateTranscation = await pool.query(
-            "UPDATE transcation SET date = $1, amount = $2, recipient = $3, envelope_id = $4 WHERE envelope_id = $5",
+        
+        // update this transaction
+        const updateTransaction = await pool.query(
+            "UPDATE transaction SET date = $1, amount = $2, recipient = $3, envelope_id = $4 WHERE transaction_id = $5",
             [date, amount, recipient, envelope_id, id]
         );
 
-        res.json("Transcation was updated");
+        // old envelope recover
+        const oldEnvelopeRecover = await pool.query(
+            "UPDATE envelope SET current_balance = current_balance+$1 WHERE envelope_id = $2",
+            [oldAmount, oldEnvelope]
+        );
+
+        // new envelope substract
+        const newEnvelopeSubstract = await pool.query(
+            "UPDATE envelope SET current_balance = current_balance-$1 WHERE envelope_id = $2",
+            [amount, envelope_id]
+        );
+
+        res.json("Transaction was updated");
     } catch (error) {
         console.error(error.message);
     }
 })
 
 // delete a transction
-app.delete("/transcations/:id", async (req, res) => {
+app.delete("/transactions/:id", async (req, res) => {
     try {
         const {id} = req.params;
-        const deleteTranscation = await pool.query(
-            "DELETE FROM transcation WHERE transcation_id = $1",
+
+        const transaction = await pool.query(
+            "SELECT * FROM transaction WHERE transaction_id = $1", 
             [id]
         );
+        const recoverAmount = transaction.rows[0].amount;
+        const recoverEnvelope = transaction.rows[0].envelope_id;
 
-        res.json("Transcation was deleted");
+        const deleteTransaction = await pool.query(
+            "DELETE FROM transaction WHERE transaction_id = $1",
+            [id]
+        );
+        
+        const recoverDeletedEnvelope = await pool.query(
+            "UPDATE envelope SET current_balance = current_balance+$1 WHERE envelope_id = $2",
+            [recoverAmount, recoverEnvelope]
+        );
+
+        res.json("Transaction was deleted & envelope was recovered");
     } catch (error) {
         console.error(error.message);
     }
