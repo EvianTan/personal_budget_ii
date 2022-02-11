@@ -11,9 +11,7 @@ const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 
 
-///////////////////////////////////////////////////////////////////////////////
-// envelope api part
-///////////////////////////////////////////////////////////////////////////////
+
 /**
  * @swagger
  * components:
@@ -42,8 +40,41 @@ const swaggerUi = require("swagger-ui-express");
  *              name: food
  *              description: the expense for food
  *              current_balance: 600
+ *      Transaction:
+ *          type: object
+ *          required: 
+ *              - date
+ *              - amount
+ *              - recipient
+ *              - envelope_id
+ *          properties:
+ *              transaction_id:
+ *                  type: integer
+ *                  description: The auto-generated id of the transaction
+ *              date:
+ *                  type: date
+ *                  description: The date of the transaction
+ *              amount:
+ *                  type: decimal
+ *                  description: The amount of the transaction
+ *              recipient:
+ *                  type: string
+ *                  description: The recipient of the transaction
+ *              envelope_id:
+ *                  type: integer
+ *                  description: The envelope_id of the transaction
+ *          example:
+ *              transaction_id: 2
+ *              date: 2008-11-11 13:23:44
+ *              amount: 60.00
+ *              recipent: Amazon
+ *              envelope_id: 1
  */
 
+
+///////////////////////////////////////////////////////////////////////////////
+// envelope api part
+///////////////////////////////////////////////////////////////////////////////
 /**
  * @swagger
  * tags:
@@ -67,7 +98,6 @@ const swaggerUi = require("swagger-ui-express");
  *                          items:
  *                              $ref: "#/components/schemas/Envelope"
  */
-
 // get all envelopes
 app.get("/envelopes", async (req, res) => {
     try {
@@ -118,6 +148,7 @@ app.get("/envelopes/:id", async (req, res) => {
     }
 })
 
+
 /**
  * @swagger
  * /envelopes:
@@ -140,7 +171,6 @@ app.get("/envelopes/:id", async (req, res) => {
  *          500:
  *              description: Some server error
  */
-
 // create an envelope
 app.post("/envelopes", async (req, res) => {
     try {
@@ -193,7 +223,6 @@ app.post("/envelopes", async (req, res) => {
  *          500:
  *              description: Some server error happened
  */
-
 // update an envelope
 app.put("/envelopes/:id", async (req, res) => {
     try {
@@ -249,11 +278,32 @@ app.delete("/envelopes/:id", async (req, res) => {
 })
 
 
-
 ///////////////////////////////////////////////////////////////////////////////
 // transaction api part
 ///////////////////////////////////////////////////////////////////////////////
+/**
+ * @swagger
+ * tags:
+ *  name: Transactions
+ *  description: The transactions managing API
+ */
 
+/**
+ * @swagger
+ * /transactions:
+ *  get:
+ *      summary: Returns the list of all the transactions
+ *      tags: [Transactions]
+ *      responses:
+ *          200:
+ *              description: The list of the transactions
+ *              content:
+ *                  application/json:
+ *                      schema:
+ *                          type: array
+ *                          items:
+ *                              $ref: "#/components/schemas/Transaction"
+ */
 // read all transaction
 app.get("/transactions", async (req, res) => {
     try {
@@ -264,6 +314,31 @@ app.get("/transactions", async (req, res) => {
     }
 })
 
+
+/**
+ * @swagger
+ * /transactions/{id}:
+ *  get:
+ *      summary: Returns the transaction by id
+ *      tags: [Transactions]
+ *      parameters:
+ *          - in: path
+ *            name: id
+ *            schema:
+ *              type: string
+ *            required: true
+ *            description: the transaction id 
+ *      responses:
+ *          200:
+ *              description: The transaction description by id
+ *              content:
+ *                  application/json:
+ *                      schema:
+ *                          items:
+ *                              $ref: "#/components/schemas/Transaction"
+ *          404:
+ *              description: The transaction was not found
+ */
 // read a transaction
 app.get("/transactions/:id", async (req, res) => {  
     try {
@@ -275,10 +350,33 @@ app.get("/transactions/:id", async (req, res) => {
 
         res.json(transaction.rows[0]);
     } catch (error) {
-        console.error(error.message);
+        return res.status(404).send(error);
     }
 })
 
+
+/**
+ * @swagger
+ * /transactions:
+ *  post:
+ *      summary: Create a new transaction
+ *      tags: [Transactions]
+ *      requestBody:
+ *          required: true
+ *          content:
+ *              application/json:
+ *                  schema:
+ *                      $ref: "#/components/schemas/Transaction" 
+ *      responses:
+ *          200:
+ *              description: The transaction was successfully created
+ *              content:
+ *                  application/json:
+ *                      schema:
+ *                          $ref: "#/components/schemas/Transaction"
+ *          500:
+ *              description: Some server error
+ */
 // create a transaction
 app.post("/transactions", async (req, res) => {
     try {
@@ -300,10 +398,43 @@ app.post("/transactions", async (req, res) => {
         res.json(newTransaction.rows[0]);
         
     } catch(error) {
-        console.error(error.message);
+        return res.status(500).send(error);
     }
 })
 
+
+/**
+ * @swagger
+ * /transactions/{id}:
+ *  put:
+ *      summary: Updates the transaction by id
+ *      tags: [Transactions]
+ *      parameters:
+ *          - in: path
+ *            name: id
+ *            schema:
+ *              type: string
+ *            required: true
+ *            description: the transaction id
+ *      requestBody:
+ *          required: true
+ *          content:
+ *              application/json:
+ *                  schema:
+ *                      $ref: "#/components/schemas/Transaction" 
+ *      responses:
+ *          200:
+ *              description: The transaction was updated
+ *              content:
+ *                  application/json:
+ *                      schema:
+ *                          items:
+ *                              $ref: "#/components/schemas/Transaction"
+ *          404:
+ *              description: The transaction was not found
+ *          500:
+ *              description: Some server error happened
+ */
 // update a transaction
 app.put("/transactions/:id", async (req, res) => {
     try {
@@ -344,10 +475,30 @@ app.put("/transactions/:id", async (req, res) => {
 
         res.json("Transaction was updated");
     } catch (error) {
-        console.error(error.message);
+        return res.status(500).send(error);
     }
 })
 
+
+/**
+ * @swagger
+ * /transactions/{id}:
+ *  delete:
+ *      summary: Deletes the transaction by id
+ *      tags: [Transactions]
+ *      parameters:
+ *          - in: path
+ *            name: id
+ *            schema:
+ *              type: string
+ *            required: true
+ *            description: the transaction id
+ *      responses:
+ *          200:
+ *              description: The transaction was deleted
+ *          404:
+ *              description: The transaction was not found
+ */
 // delete a transction
 app.delete("/transactions/:id", async (req, res) => {
     try {
@@ -372,7 +523,7 @@ app.delete("/transactions/:id", async (req, res) => {
 
         res.json("Transaction was deleted & envelope was recovered");
     } catch (error) {
-        console.error(error.message);
+        return res.status(404).send(error);
     }
 })
 
