@@ -160,6 +160,40 @@ app.post("/envelopes", async (req, res) => {
     }
 })
 
+
+/**
+ * @swagger
+ * /envelopes/{id}:
+ *  put:
+ *      summary: Updates the envelope by id
+ *      tags: [Envelopes]
+ *      parameters:
+ *          - in: path
+ *            name: id
+ *            schema:
+ *              type: string
+ *            required: true
+ *            description: the envelope id
+ *      requestBody:
+ *          required: true
+ *          content:
+ *              application/json:
+ *                  schema:
+ *                      $ref: "#/components/schemas/Envelope" 
+ *      responses:
+ *          200:
+ *              description: The envelope was updated
+ *              content:
+ *                  application/json:
+ *                      schema:
+ *                          items:
+ *                              $ref: "#/components/schemas/Envelope"
+ *          404:
+ *              description: The envelope was not found
+ *          500:
+ *              description: Some server error happened
+ */
+
 // update an envelope
 app.put("/envelopes/:id", async (req, res) => {
     try {
@@ -175,10 +209,30 @@ app.put("/envelopes/:id", async (req, res) => {
 
         res.json("Envelope was updated");
     } catch (error) {
-        console.error(error.message);
+        return res.status(500).send(error);
     }
 })
 
+
+/**
+ * @swagger
+ * /envelopes/{id}:
+ *  delete:
+ *      summary: Deletes the envelope by id
+ *      tags: [Envelopes]
+ *      parameters:
+ *          - in: path
+ *            name: id
+ *            schema:
+ *              type: string
+ *            required: true
+ *            description: the envelope id
+ *      responses:
+ *          200:
+ *              description: The envelope was deleted
+ *          404:
+ *              description: The envelope was not found
+ */
 // delete an envelope
 app.delete("/envelopes/:id", async (req, res) => {
     try {
@@ -190,7 +244,7 @@ app.delete("/envelopes/:id", async (req, res) => {
 
         res.json("Envelope was deleted");
     } catch (error) {
-        console.error(error.message);
+        return res.status(404).send(error);
     }
 })
 
