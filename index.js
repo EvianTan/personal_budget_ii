@@ -6,9 +6,68 @@ const pool = require("./db");
 
 app.use(express.json()); // => req.body
 
+const bodyParser = require("body-parser");
+const swaggerJsdoc = require("swagger-jsdoc");
+const swaggerUi = require("swagger-ui-express");
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // envelope api part
 ///////////////////////////////////////////////////////////////////////////////
+/**
+ * @swagger
+ * components:
+ *  schemas:
+ *      Envelope:
+ *          type: object
+ *          required: 
+ *              - name
+ *              - description
+ *              - current_balance
+ *          properties:
+ *              envelope_id:
+ *                  type: integer
+ *                  description: The auto-generated id of the envelope
+ *              name:
+ *                  type: string
+ *                  description: The title of the budget envelope
+ *              description:
+ *                  type: string
+ *                  description: The detail info of the budget envelope
+ *              current_balance:
+ *                  type: decimal
+ *                  description: The current balance of the budget envelope
+ *          example:
+ *              envelope_id: 2
+ *              name: food
+ *              description: the expense for food
+ *              current_balance: 600
+ */
+
+/**
+ * @swagger
+ * tags:
+ *  name: Envelopes
+ *  description: The envelopes managing API
+ */
+
+/**
+ * @swagger
+ * /envelopes:
+ *  get:
+ *      summary: Returns the list of all the envelopes
+ *      tags: [Envelopes]
+ *      responses:
+ *          200:
+ *              description: The list of the envelopes
+ *              content:
+ *                  application/json:
+ *                      schema:
+ *                          type: array
+ *                          items:
+ *                              $ref: "#/components/schemas/Envelope"
+ */
+
 // get all envelopes
 app.get("/envelopes", async (req, res) => {
     try {
@@ -19,6 +78,31 @@ app.get("/envelopes", async (req, res) => {
     }
 })
 
+
+/**
+ * @swagger
+ * /envelopes/{id}:
+ *  get:
+ *      summary: Returns the envelope by id
+ *      tags: [Envelopes]
+ *      parameters:
+ *          - in: path
+ *            name: id
+ *            schema:
+ *              type: string
+ *            required: true
+ *            description: the envelope id 
+ *      responses:
+ *          200:
+ *              description: The envelope description by id
+ *              content:
+ *                  application/json:
+ *                      schema:
+ *                          items:
+ *                              $ref: "#/components/schemas/Envelope"
+ *          404:
+ *              description: The envelope was not found
+ */
 // get an envelope
 app.get("/envelopes/:id", async (req, res) => {  
     try {
@@ -30,9 +114,32 @@ app.get("/envelopes/:id", async (req, res) => {
 
         res.json(envelope.rows[0]);
     } catch (error) {
-        console.error(error.message);
+        return res.status(404).send(error);
     }
 })
+
+/**
+ * @swagger
+ * /envelopes:
+ *  post:
+ *      summary: Create a new envelope
+ *      tags: [Envelopes]
+ *      requestBody:
+ *          required: true
+ *          content:
+ *              application/json:
+ *                  schema:
+ *                      $ref: "#/components/schemas/Envelope" 
+ *      responses:
+ *          200:
+ *              description: The envelope was successfully created
+ *              content:
+ *                  application/json:
+ *                      schema:
+ *                          $ref: "#/components/schemas/Envelope"
+ *          500:
+ *              description: Some server error
+ */
 
 // create an envelope
 app.post("/envelopes", async (req, res) => {
@@ -49,7 +156,7 @@ app.post("/envelopes", async (req, res) => {
         res.json(newEnvelope.rows[0]);
         
     } catch(error) {
-        console.error(error.message);
+        return res.status(500).send(error);
     }
 })
 
@@ -214,6 +321,35 @@ app.delete("/transactions/:id", async (req, res) => {
         console.error(error.message);
     }
 })
+
+const options = {
+    definition: {
+      openapi: "3.0.0",
+      info: {
+        title: "Express APIs",
+        version: "1.0.0",
+        description:
+          "This is a simple CRUD API application made with Express and documented with Swagger",
+      },
+      servers: [
+        {
+          url: "http://localhost:3000",
+        },
+      ],
+    },
+    apis: ["./index.js"],
+  };
+  
+  const specs = swaggerJsdoc(options);
+  app.use(
+    "/api-docs",
+    swaggerUi.serve,
+    swaggerUi.setup(specs,
+        {
+            explorer: true
+        })
+  );
+
 
 app.listen(3000, () => {
     console.log("Server is listening on port 3000");
